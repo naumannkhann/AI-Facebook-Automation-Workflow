@@ -1,0 +1,258 @@
+{
+  "name": "Facebook Automation Workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1904,
+        -1152
+      ],
+      "id": "e55cef92-ed76-49d1-a814-53b79ea81d32",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "96e2611f-8954-4d43-80d9-2863bc75388d",
+              "name": "topic",
+              "value": "AI automation for small businesses",
+              "type": "string"
+            },
+            {
+              "id": "ed52ff9d-8c51-4230-87c2-ee0da7dcbdc2",
+              "name": "brand_tone",
+              "value": "professional but friendly",
+              "type": "string"
+            },
+            {
+              "id": "2b2cbb61-7ab3-431f-813e-c0a60c0ec347",
+              "name": "target_audience",
+              "value": "founders & non-tech business owners",
+              "type": "string"
+            },
+            {
+              "id": "fbe1a6c2-ebda-4bca-aeb7-9040743dc02c",
+              "name": "platform",
+              "value": "facebook",
+              "type": "string"
+            },
+            {
+              "id": "3d0c5a58-042f-4b63-844c-07744583b4ac",
+              "name": "emoji_level",
+              "value": "medium",
+              "type": "string"
+            },
+            {
+              "id": "e262eaf2-a059-4f5d-a665-e563a2878254",
+              "name": "language",
+              "value": "English",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1728,
+        -1152
+      ],
+      "id": "4def594d-213b-43d2-800d-c5c9b3fe2096",
+      "name": "Input – Content Brief"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Create platform-specific content based on the following input: Topic: {{$json.topic}} Brand Tone: {{$json.brand_tone}} Platform: {{$json.platform}} Target Audience: {{$json.target_audience}} Emoji Level: {{$json.emoji_level}} Language: {{$json.language}} Generate content for the below platform: Facebook: - Friendly, engaging - 2–3 short paragraphs - Emojis allowed Return response in STRICT JSON format like this: { \"facebook\": { \"caption\": \"\" }",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -1584,
+        -1152
+      ],
+      "id": "f7756724-ec8c-4776-8083-1cc03b38f4f1",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -1664,
+        -944
+      ],
+      "id": "87939483-5c87-49e2-a0d6-b550d152280e",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "3zuuwPla7pnS6UYC",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b0b9a3fe-1d71-4be0-9b95-0940b49629fa",
+              "name": "fb_caption",
+              "value": "={{$json.facebook.caption}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1152,
+        -1152
+      ],
+      "id": "be27ef72-144a-4d7f-927a-faa0fd0880b2",
+      "name": "Format – Platform Content"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the raw text output from Gemini\nconst rawText = $json.text;\n\n// Remove markdown ```json and ```\nconst cleanedText = rawText\n  .replace(/```json/g, '')\n  .replace(/```/g, '')\n  .trim();\n\n// Parse JSON safely\nlet parsed;\ntry {\n  parsed = JSON.parse(cleanedText);\n} catch (error) {\n  throw new Error('Invalid JSON from LLM');\n}\n\n// Return clean structured JSON\nreturn parsed;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1312,
+        -1152
+      ],
+      "id": "394e9f7a-09d9-426b-a7a5-8a479a36d094",
+      "name": "Parse AI JSON"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v24.0/927201610481775/feed",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "message",
+              "value": "={{ $json.fb_caption }}"
+            },
+            {
+              "name": "access_token",
+              "value": "EAAKgpnttrJsBQbpKA70Gbbh0jDEHkN47mr8sZBJmZBEuoUsNcJIH8mlZBU6ufd0dO97ioXD7wzoZCmXZAQ1QJ0jOtFciOdQd8ZC8wNsSe6ZCXIbZCJlby4f3ormW01gZAnIZAYQCzWJwjnmZAZAJjlj5qHeTW4RofWLGy9ofrayAgIW3ACiL9lnrTR8xuoZCRKCZAhWE5UQVlQDZB92"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/x-www-form-urlencoded"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -976,
+        -1152
+      ],
+      "id": "7ba9fcf5-94d4-49a5-98d0-f19e27935c44",
+      "name": "Posting on Facebook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Input – Content Brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input – Content Brief": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Parse AI JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI JSON": {
+      "main": [
+        [
+          {
+            "node": "Format – Platform Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format – Platform Content": {
+      "main": [
+        [
+          {
+            "node": "Posting on Facebook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "6bc419d5-071d-4aa4-88eb-aa4539124a2c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f9ca05499a65d18ad1bb67bd915d3e37f826b13f50755ca37c97d448d967f525"
+  },
+  "id": "lZYwn8fuMnwv3kUv",
+  "tags": []
+}
